@@ -223,6 +223,7 @@ export function buildPreviewHtml(blocks: CodePart[], pressed: CodePart): string 
 
   const base = normalizeLang(pressed.lang) === 'html' ? pressed : htmlBlocks[0];
   if (base) return injectIntoHtml(base.code, cssParts, jsParts);
-  if (normalizeLang(pressed.lang) === 'css') return wrapCss(pressed.code);
-  return wrapJs(pressed.code);
+  // no html block → wrap the css/js blocks standalone (pressed included)
+  if (normalizeLang(pressed.lang) === 'css') return wrapCss(cssParts.join('\n\n'));
+  return wrapJs(jsParts.join('\n;\n'));
 }
