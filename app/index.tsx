@@ -93,19 +93,19 @@ export default function ChatScreen() {
         },
         (progress) => setLoadProgress(progress),
         (reasoning) => {
-          pendingReasoningRef.current = reasoning;
+          pendingReasoningRef.current += reasoning;
         },
       );
       stopInterval();
       const finalText = pendingRef.current.trim();
       const finalReasoning = pendingReasoningRef.current.trim();
-      if (finalText) {
+      if (finalText || finalReasoning) {
         addMessage({
           id: newId(),
           role: 'assistant',
-          content: finalText,
+          content: finalText || finalReasoning, // Fallback to reasoning if maxTokens ran out during thinking
           createdAt: Date.now(),
-          reasoning_content: finalReasoning || undefined,
+          reasoning_content: finalText && finalReasoning ? finalReasoning : undefined,
         });
       }
       setStats(result.stats);

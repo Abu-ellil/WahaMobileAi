@@ -11,6 +11,7 @@
       "supportsTablet": true
     },
     "android": {
+      "versionCode": 1,
       "adaptiveIcon": {
         "backgroundColor": "#1a73e8",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -46,6 +47,13 @@
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "c1900d35-8b19-4d84-b68c-84d94fc7057b"
+      }
+    },
+    "owner": "aboellil"
   }
 }

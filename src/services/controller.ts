@@ -34,7 +34,7 @@ class ChatController {
   }
 
   async unloadLocalModel(): Promise<void> {
-    const { releaseLocalModel } = await import('./LocalEngine');
+    const { releaseLocalModel } = require('./LocalEngine') as typeof import('./LocalEngine');
     await releaseLocalModel();
   }
 }

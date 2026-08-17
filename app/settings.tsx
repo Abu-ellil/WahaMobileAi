@@ -19,7 +19,7 @@ import { useSettings, updateSection, setSettings } from '../src/store/settings';
 import { useModels, importModel, deleteModel, activateModel } from '../src/store/models';
 import { useChat, clearMessages } from '../src/store/chat';
 import { pingRemote, RemotePingResult } from '../src/services/RemoteEngine';
-import { isExpoGo } from '../src/services/LocalEngine';
+import { isExpoGo, isLocalModelLoaded, releaseLocalModel, loadLocalModel } from '../src/services/LocalEngine';
 import { ImportedModel } from '../src/services/types';
 import Stepper from '../src/components/Stepper';
 
@@ -38,6 +38,8 @@ export default function SettingsScreen() {
   const [testing, setTesting] = useState(false);
   const [ping, setPing] = useState<RemotePingResult | null>(null);
   const [importing, setImporting] = useState(false);
+  const [modelLoaded, setModelLoaded] = useState(() => isLocalModelLoaded(settings));
+  const [loadProgress, setLoadProgress] = useState<number | null>(null);
 
   const handleImport = useCallback(async () => {
     setImporting(true);
@@ -64,10 +66,44 @@ export default function SettingsScreen() {
           void deleteModel(model.id).catch((e: unknown) => {
             Alert.alert('خطأ', e instanceof Error ? e.message : String(e));
           });
+          setModelLoaded(false);
         },
       },
     ]);
   }, []);
+
+  const handleUnloadModel = useCallback(() => {
+    Alert.alert('إفراغ النموذج', 'إيقاف تحميل النموذج من الذاكرة؟', [
+      { text: 'إلغاء', style: 'cancel' },
+      {
+        text: 'إفراغ',
+        style: 'destructive',
+        onPress: async () => {
+          await releaseLocalModel();
+          setModelLoaded(false);
+        },
+      },
+    ]);
+  }, []);
+
+  const [loadingModel, setLoadingModel] = useState(false);
+
+  const handleLoadModel = useCallback(async () => {
+    if (!settings.local.modelId) {
+      Alert.alert('خطأ', 'حدد نموذجاً أولاً من القائمة أعلاه.');
+      return;
+    }
+    setLoadingModel(true);
+    try {
+      await loadLocalModel(settings, (p) => setLoadProgress(p));
+      setModelLoaded(true);
+    } catch (e) {
+      Alert.alert('خطأ', e instanceof Error ? e.message : String(e));
+    } finally {
+      setLoadingModel(false);
+      setLoadProgress(null);
+    }
+  }, [settings]);
 
   const handleTest = useCallback(async () => {
     setTesting(true);
@@ -264,6 +300,38 @@ export default function SettingsScreen() {
                 </Text>
               )}
             </TouchableOpacity>
+            {!modelLoaded && settings.local.modelId && (
+              <TouchableOpacity
+                style={[styles.importBtn, { borderColor: colors.success, marginBottom: 8 }]}
+                onPress={handleLoadModel}
+                disabled={loadingModel}
+              >
+                {loadingModel ? (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+                    <ActivityIndicator size="small" color={colors.success} />
+                    {loadProgress != null && (
+                      <Text style={{ color: colors.success, fontFamily: fontBold, fontSize: 13, marginStart: 8 }}>
+                        {Math.round(loadProgress)}%
+                      </Text>
+                    )}
+                  </View>
+                ) : (
+                  <Text style={{ color: colors.success, fontFamily: fontBold, fontSize: 14 }}>
+                    ▶ تحميل النموذج في الذاكرة
+                  </Text>
+                )}
+              </TouchableOpacity>
+            )}
+            {modelLoaded && (
+              <TouchableOpacity
+                style={[styles.dangerBtn, { borderColor: colors.warning, marginBottom: 8 }]}
+                onPress={handleUnloadModel}
+              >
+                <Text style={{ color: colors.warning, fontFamily: fontBold, fontSize: 14 }}>
+                  ⏏ إفراغ النموذج من الذاكرة
+                </Text>
+              </TouchableOpacity>
+            )}
             <Text style={[styles.hint, { color: colors.textMuted, fontFamily: font }]}>
               يُنسخ الملف إلى مساحة التطبيق حتى لا يعتمد على مجلدات مؤقتة.{'\n'}
               مقترحات للجوال: Llama 3.2 1B أو Qwen2.5 0.5B/1.5B بصيغة Q4_K_M.

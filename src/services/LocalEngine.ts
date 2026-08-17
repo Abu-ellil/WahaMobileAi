@@ -19,8 +19,8 @@ export function isExpoGo(): boolean {
 }
 
 async function findModel(settings: AppSettings) {
-  // Lazy import breaks the circular dependency: models.ts ↔ LocalEngine.ts
-  const { getModels } = await import('../store/models');
+  // Sync require breaks the circular dependency without dynamic import Metro issues
+  const { getModels } = require('../store/models') as typeof import('../store/models');
   const model = getModels().find((m) => m.id === settings.local.modelId);
   if (!model) {
     throw new AppError('لا يوجد نموذج GGUF محدد — استورد نموذجاً من الإعدادات أولاً.');
@@ -47,7 +47,8 @@ async function ensureContext(
     ctxKey = '';
   }
 
-  const { initLlama } = await import('llama.rn');
+  // Native llama.rn module is dynamically required to prevent crash in Expo Go
+  const { initLlama } = require('llama.rn') as typeof import('llama.rn');
   try {
     ctx = await initLlama(
       {
@@ -99,6 +100,8 @@ export async function sendLocal(
 
   activeContext = context;
   try {
+    let inThinking = false;
+    let thinkingBuffer = '';
     const result = await context.completion(
       {
         messages,
@@ -106,15 +109,73 @@ export async function sendLocal(
         temperature: settings.generation.temperature,
       },
       (data) => {
-        // Capture reasoning/thinking content from models that support it
-        if (data.reasoning_content && onReasoning) {
-          onReasoning(data.reasoning_content);
+        // 1. If llama.rn natively parsed reasoning_content
+        if (data.reasoning_content) {
+          if (onReasoning) onReasoning(data.reasoning_content);
+          return;
         }
-        // data.token is the new incremental piece — not accumulated
-        const piece = data.token ?? data.content ?? '';
-        if (piece) onDelta(piece);
+
+        const token = data.token ?? '';
+        if (!token) return;
+
+        // 2. Fallback: Parse thinking tags in the token stream
+        thinkingBuffer += token;
+
+        // Check for thinking start
+        if (!inThinking) {
+          const idx = thinkingBuffer.search(/<think>|<\|channel>thought/i);
+          if (idx !== -1) {
+            inThinking = true;
+            const before = thinkingBuffer.slice(0, idx);
+            if (before) onDelta(before);
+            thinkingBuffer = '';
+            return;
+          }
+        }
+
+        // Check for thinking end
+        if (inThinking) {
+          const idx = thinkingBuffer.search(/<\/think>|<\/thought>|<\|channel\|>|<\|im_end\|>/i);
+          if (idx !== -1) {
+            inThinking = false;
+            const before = thinkingBuffer.slice(0, idx);
+            if (before && onReasoning) onReasoning(before);
+            thinkingBuffer = '';
+            return;
+          }
+        }
+
+        // If no tags matched yet, only buffer if we are near a potential tag start ("<")
+        const lastOpenBracket = thinkingBuffer.lastIndexOf('<');
+        if (lastOpenBracket !== -1 && (thinkingBuffer.length - lastOpenBracket) < 20) {
+          const toEmit = thinkingBuffer.slice(0, lastOpenBracket);
+          thinkingBuffer = thinkingBuffer.slice(lastOpenBracket);
+          if (toEmit) {
+            if (inThinking) {
+              if (onReasoning) onReasoning(toEmit);
+            } else {
+              onDelta(toEmit);
+            }
+          }
+        } else {
+          if (inThinking) {
+            if (onReasoning) onReasoning(thinkingBuffer);
+          } else {
+            onDelta(thinkingBuffer);
+          }
+          thinkingBuffer = '';
+        }
       },
     );
+
+    // End of completion: flush any remaining buffer
+    if (thinkingBuffer) {
+      if (inThinking) {
+        if (onReasoning) onReasoning(thinkingBuffer);
+      } else {
+        onDelta(thinkingBuffer);
+      }
+    }
 
     const tps = result?.timings?.predicted_per_second;
     return {
@@ -137,4 +198,12 @@ export async function releaseLocalModel(): Promise<void> {
     ctx = null;
     ctxKey = '';
   }
+}
+
+/** Load the model into memory without sending a message */
+export async function loadLocalModel(
+  settings: AppSettings,
+  onProgress?: (progress: number) => void,
+): Promise<void> {
+  await ensureContext(settings, onProgress);
 }
