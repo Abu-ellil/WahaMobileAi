@@ -15,13 +15,14 @@ class ChatController {
     settings: AppSettings,
     onDelta: (text: string) => void,
     onLoadProgress?: (progress: number) => void,
+    onReasoning?: (text: string) => void,
   ): Promise<SendResult> {
     this.aborter = new AbortController();
     this.mode = settings.mode;
 
     const stats =
       settings.mode === 'local'
-        ? await sendLocal(history, settings, onDelta, onLoadProgress)
+        ? await sendLocal(history, settings, onDelta, onLoadProgress, onReasoning)
         : await sendRemote(history, settings, onDelta, this.aborter.signal);
 
     return { stats, aborted: this.aborter.signal.aborted };

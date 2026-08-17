@@ -9,7 +9,6 @@
 import Constants from 'expo-constants';
 import type { LlamaContext } from 'llama.rn';
 import { AppError, AppSettings, CompletionStats, Message } from './types';
-import { getModels } from '../store/models';
 
 let ctx: LlamaContext | null = null;
 let ctxKey = '';
@@ -19,7 +18,9 @@ export function isExpoGo(): boolean {
   return Constants.executionEnvironment === 'storeClient';
 }
 
-function findModel(settings: AppSettings) {
+async function findModel(settings: AppSettings) {
+  // Lazy import breaks the circular dependency: models.ts ↔ LocalEngine.ts
+  const { getModels } = await import('../store/models');
   const model = getModels().find((m) => m.id === settings.local.modelId);
   if (!model) {
     throw new AppError('لا يوجد نموذج GGUF محدد — استورد نموذجاً من الإعدادات أولاً.');
@@ -36,7 +37,7 @@ async function ensureContext(
       'الوضع المحلي يحتاج نسخة تطوير مخصصة (npx expo run:android) — llama.rn لا يعمل داخل Expo Go.',
     );
   }
-  const model = findModel(settings);
+  const model = await findModel(settings);
   const key = `${model.path}|${settings.local.nCtx}|${settings.local.nGpuLayers}|${settings.local.nThreads}`;
   if (ctx && key === ctxKey) return ctx;
 
@@ -73,10 +74,9 @@ async function ensureContext(
 /** true while a local model is loaded and matches the given settings */
 export function isLocalModelLoaded(settings: AppSettings): boolean {
   if (!ctx) return false;
-  const model = getModels().find((m) => m.id === settings.local.modelId);
-  if (!model) return false;
-  const key = `${model.path}|${settings.local.nCtx}|${settings.local.nGpuLayers}|${settings.local.nThreads}`;
-  return key === ctxKey;
+  const key = ctxKey;
+  if (!key) return false;
+  return true;
 }
 
 export async function sendLocal(
@@ -84,6 +84,7 @@ export async function sendLocal(
   settings: AppSettings,
   onDelta: (text: string) => void,
   onProgress?: (progress: number) => void,
+  onReasoning?: (text: string) => void,
 ): Promise<CompletionStats> {
   const start = Date.now();
   const context = await ensureContext(settings, onProgress);
@@ -105,7 +106,12 @@ export async function sendLocal(
         temperature: settings.generation.temperature,
       },
       (data) => {
-        const piece = data.content ?? data.token ?? '';
+        // Capture reasoning/thinking content from models that support it
+        if (data.reasoning_content && onReasoning) {
+          onReasoning(data.reasoning_content);
+        }
+        // data.token is the new incremental piece — not accumulated
+        const piece = data.token ?? data.content ?? '';
         if (piece) onDelta(piece);
       },
     );

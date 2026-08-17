@@ -43,11 +43,13 @@ export default function ChatScreen() {
   const [input, setInput] = useState('');
   const [running, setRunning] = useState(false);
   const [streamText, setStreamText] = useState('');
+  const [reasoningText, setReasoningText] = useState('');
   const [loadProgress, setLoadProgress] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [stats, setStats] = useState<CompletionStats | null>(null);
 
   const pendingRef = useRef('');
+  const pendingReasoningRef = useRef('');
   const flushTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const stopInterval = useCallback(() => {
@@ -63,6 +65,7 @@ export default function ChatScreen() {
     if (flushTimerRef.current) return;
     flushTimerRef.current = setInterval(() => {
       setStreamText(pendingRef.current);
+      setReasoningText(pendingReasoningRef.current);
     }, FLUSH_INTERVAL_MS);
   }, []);
 
@@ -75,7 +78,9 @@ export default function ChatScreen() {
     setError(null);
     setStats(null);
     setStreamText('');
+    setReasoningText('');
     pendingRef.current = '';
+    pendingReasoningRef.current = '';
     setRunning(true);
     startInterval();
 
@@ -87,15 +92,20 @@ export default function ChatScreen() {
           pendingRef.current += delta;
         },
         (progress) => setLoadProgress(progress),
+        (reasoning) => {
+          pendingReasoningRef.current = reasoning;
+        },
       );
       stopInterval();
       const finalText = pendingRef.current.trim();
+      const finalReasoning = pendingReasoningRef.current.trim();
       if (finalText) {
         addMessage({
           id: newId(),
           role: 'assistant',
           content: finalText,
           createdAt: Date.now(),
+          reasoning_content: finalReasoning || undefined,
         });
       }
       setStats(result.stats);
@@ -194,6 +204,7 @@ export default function ChatScreen() {
               <StreamingBubble
                 theme={theme}
                 text={streamText}
+                reasoning={reasoningText}
                 loadProgress={loadProgress}
               />
             ) : null
@@ -259,19 +270,26 @@ function EmptyState({
 function StreamingBubble({
   theme,
   text,
+  reasoning,
   loadProgress,
 }: {
   theme: ReturnType<typeof useTheme>;
   text: string;
+  reasoning: string;
   loadProgress: number | null;
 }) {
   const { colors, font } = theme;
+  const isThinking = !text && reasoning.length > 0;
   return (
     <View style={[styles.rowBot, { marginHorizontal: 12, marginVertical: 4 }]}>
       <View style={[styles.streamingBubble, { backgroundColor: colors.botBubble }]}>
         {loadProgress != null ? (
           <Text style={[styles.streamingText, { color: colors.textMuted, fontFamily: font }]}>
-            ⏳ جاري تحميل النموذج… {Math.round(loadProgress * 100)}%
+            ⏳ جاري تحميل النموذج… {Math.round(loadProgress)}%
+          </Text>
+        ) : isThinking ? (
+          <Text style={[styles.streamingText, { color: colors.textMuted, fontFamily: font, fontStyle: 'italic' }]}>
+            🧠 Thinking…
           </Text>
         ) : text ? (
           <Text style={[styles.streamingText, { color: colors.botBubbleText, fontFamily: font }]}>

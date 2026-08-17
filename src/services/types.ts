@@ -10,6 +10,8 @@ export interface Message {
   createdAt: number;
   /** true when this message holds a partial/error generation */
   error?: boolean;
+  /** reasoning/thinking content from models that support it (e.g. Qwen, DeepSeek) */
+  reasoning_content?: string;
 }
 
 export interface Conversation {

@@ -24,8 +24,10 @@ function formatTime(ts: number): string {
 
 function MessageBubble({ message, theme }: Props) {
   const [copied, setCopied] = useState(false);
+  const [showThinking, setShowThinking] = useState(false);
   const router = useRouter();
   const isUser = message.role === 'user';
+  const hasReasoning = !isUser && !!message.reasoning_content;
 
   const segments = useMemo(
     () => (isUser ? null : parseSegments(message.content)),
@@ -68,6 +70,23 @@ function MessageBubble({ message, theme }: Props) {
           message.error && styles.bubbleError,
         ]}
       >
+        {hasReasoning && (
+          <TouchableOpacity
+            onPress={() => setShowThinking(!showThinking)}
+            style={styles.thinkingToggle}
+          >
+            <Text style={[styles.thinkingToggleText, { color: theme.colors.primary, fontFamily: theme.font }]}>
+              {showThinking ? '🧠 إخفاء التفكير' : '🧠 عرض التفكير'}
+            </Text>
+          </TouchableOpacity>
+        )}
+        {hasReasoning && showThinking && (
+          <View style={[styles.thinkingBox, { backgroundColor: theme.colors.surfaceAlt }]}>
+            <Text style={[styles.thinkingText, { color: theme.colors.textMuted, fontFamily: theme.font }]}>
+              {message.reasoning_content}
+            </Text>
+          </View>
+        )}
         {isUser || !segments ? (
           <Text
             style={[
@@ -153,6 +172,32 @@ const styles = StyleSheet.create({
     marginTop: 2,
     textAlign: 'left',
     alignSelf: 'stretch',
+  },
+  thinkingToggle: {
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 8,
+    alignSelf: 'flex-start',
+    marginBottom: 4,
+  },
+  thinkingToggleText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  thinkingBox: {
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    marginBottom: 6,
+    borderLeftWidth: 3,
+    borderLeftColor: 'rgba(128,128,128,0.3)',
+  },
+  thinkingText: {
+    fontSize: 13,
+    lineHeight: 20,
+    textAlign: 'right',
+    writingDirection: 'rtl',
+    fontStyle: 'italic',
   },
 });
 
