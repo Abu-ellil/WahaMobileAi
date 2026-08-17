@@ -46,6 +46,7 @@ export interface AppSettings {
   remote: RemoteSettings;
   local: LocalSettings;
   generation: GenerationSettings;
+  showAds: boolean;
 }
 
 export interface ImportedModel {

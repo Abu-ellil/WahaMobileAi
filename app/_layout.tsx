@@ -54,6 +54,7 @@ function RootStack() {
         <Stack.Screen name="history" />
         <Stack.Screen name="settings" />
         <Stack.Screen name="preview" />
+        <Stack.Screen name="privacy" />
       </Stack>
     </>
   );

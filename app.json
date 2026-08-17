@@ -18,7 +18,7 @@
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "package": "com.ggufapp.app"
+      "package": "com.wahalocalai.app"
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -43,7 +43,14 @@
           }
         }
       ],
-      "expo-sharing"
+      "expo-sharing",
+      [
+        "react-native-google-mobile-ads",
+        {
+          "androidAppId": "ca-app-pub-3940256099942544~3347511713",
+          "userTrackingUsageDescription": "This identifier will be used to deliver personalized ads to you."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true
@@ -52,7 +59,9 @@
       "router": {},
       "eas": {
         "projectId": "c1900d35-8b19-4d84-b68c-84d94fc7057b"
-      }
+      },
+      "googleMobileAdsAppId": "ca-app-pub-3940256099942544~3347511713",
+      "googleMobileAdsTestDeviceId": "TEST_DEVICE_ID"
     },
     "owner": "aboellil"
   }

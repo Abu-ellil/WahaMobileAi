@@ -422,6 +422,28 @@ export default function SettingsScreen() {
             يمسح رسائل المحادثة المفتوحة فقط — بقية السجل لا يتأثر (من 🕘 في الشاشة الرئيسية).
           </Text>
         </Section>
+
+        {/* ── سياسة الخصوصية ── */}
+        <Section title="حول" theme={theme}>
+          <TouchableOpacity style={styles.linkRow} onPress={() => router.push('/privacy')}>
+            <Text style={{ color: colors.primary, fontFamily: fontBold, fontSize: 14, textAlign: 'right' }}>
+              سياسة الخصوصية
+            </Text>
+            <Text style={{ color: colors.textMuted, fontSize: 16 }}>←</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.linkRow}
+            onPressIn={() => setSettings({ showAds: !settings.showAds })}
+          >
+            <Text style={{ color: colors.text, fontFamily: font, fontSize: 14, textAlign: 'right', flex: 1 }}>
+              {settings.showAds ? 'عرض الإعلانات' : 'إخفاء الإعلانات'}
+            </Text>
+            <View style={[styles.toggleTrack, { backgroundColor: settings.showAds ? colors.primary : colors.surfaceAlt }]}>
+              <View style={[styles.toggleThumb, { backgroundColor: colors.onPrimary, transform: [{ translateX: settings.showAds ? 18 : 0 }] }]} />
+            </View>
+          </TouchableOpacity>
+        </Section>
       </ScrollView>
     </View>
   );
@@ -579,5 +601,24 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     paddingVertical: 12,
     alignItems: 'center',
+  },
+  linkRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 10,
+  },
+  toggleTrack: {
+    width: 44,
+    height: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 2,
+  },
+  toggleThumb: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
   },
 });

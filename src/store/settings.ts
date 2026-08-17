@@ -26,6 +26,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
     maxTokens: 512,
     systemPrompt: 'أنت مساعد ذكي باللغة العربية. أجب بإيجاز ووضوح.',
   },
+  showAds: true,
 };
 
 let state: AppSettings = DEFAULT_SETTINGS;
@@ -72,6 +73,7 @@ export async function loadSettings(): Promise<void> {
         remote: { ...DEFAULT_SETTINGS.remote, ...parsed.remote },
         local: { ...DEFAULT_SETTINGS.local, ...parsed.local },
         generation: { ...DEFAULT_SETTINGS.generation, ...parsed.generation },
+        showAds: typeof parsed.showAds === 'boolean' ? parsed.showAds : DEFAULT_SETTINGS.showAds,
       };
       listeners.forEach((fn) => fn());
     }

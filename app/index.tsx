@@ -1,4 +1,4 @@
-// app/index.tsx — شاشة المحادثة
+﻿﻿﻿// app/index.tsx — شاشة المحادثة
 // Streaming chat with throttled state updates (one render per ~60ms instead of
 // one per token), inverted FlatList for message recycling, and a stop button.
 
@@ -26,6 +26,7 @@ import { isExpoGo } from '../src/services/LocalEngine';
 import MessageBubble from '../src/components/MessageBubble';
 import ChatInput from '../src/components/ChatInput';
 import TypingDots from '../src/components/TypingDots';
+import AdBanner from '../src/components/AdBanner';
 
 const FLUSH_INTERVAL_MS = 60;
 
@@ -153,7 +154,7 @@ export default function ChatScreen() {
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
             <Text style={{ fontSize: 20, color: colors.headerText, opacity: running ? 0.4 : 1 }}>
-              ＋
+              ←
             </Text>
           </TouchableOpacity>
           <View style={styles.headerTitles}>
@@ -161,7 +162,7 @@ export default function ChatScreen() {
               style={[styles.title, { color: colors.headerText, fontFamily: fontBold }]}
               numberOfLines={1}
             >
-              {activeConversation && activeConversation.title ? activeConversation.title : 'محادثة جديدة'}
+              {activeConversation && activeConversation.title ? activeConversation.title : 'U.O-OO_O←Oc O←O_USO_Oc'}
             </Text>
             <Text
               style={[styles.subtitle, { color: colors.headerText, fontFamily: font }]}
@@ -176,17 +177,19 @@ export default function ChatScreen() {
             disabled={running}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
-            <Text style={{ fontSize: 17, color: colors.headerText, opacity: running ? 0.4 : 1 }}>🕘</Text>
+            <Text style={{ fontSize: 17, color: colors.headerText, opacity: running ? 0.4 : 1 }}>dY~</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.iconBtn}
             onPress={() => router.push('/settings')}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
-            <Text style={{ fontSize: 19, color: colors.headerText }}>⚙</Text>
+            <Text style={{ fontSize: 19, color: colors.headerText }}>←sT</Text>
           </TouchableOpacity>
         </View>
       </View>
+
+      <AdBanner visible={settings.showAds} />
 
       <KeyboardAvoidingView
         style={styles.flex}
